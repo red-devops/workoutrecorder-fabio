@@ -1,0 +1,59 @@
+---
+- name: Render script
+  template:
+    src: "{{ item }}"
+    dest: "{{ item }}"
+    mode: "{{ mode }}"
+  delegate_to: localhost
+  with_items:
+    - "get_consul_server_addres.sh"
+    - "get_service_token.sh"
+
+- name: Get consul server addres
+  command: "./get_consul_server_addres.sh"
+  register: consul_server_addres_output
+  delegate_to: localhost
+
+- name: Set consul server addres variable
+  set_fact:
+    consul_server_addres: "{{ consul_server_addres_output.stdout }}"
+
+- name: Get service token
+  command: "./get_service_token.sh"
+  register: service_token_output
+  delegate_to: localhost
+  
+- name: Set service token variable
+  set_fact:
+    service_token: "{{ service_token_output.stdout }}"
+
+- name: Download fabio
+  ansible.builtin.get_url:
+    url: https://github.com/fabiolb/fabio/releases/download/v1.6.3/fabio-1.6.3-linux_amd64
+    dest: "{{ app_bin_home }}/fabio"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+
+- name: Copy fabio config
+  template:
+    src: "fabio.properties"
+    dest: "{{ app_config_home }}/fabio.properties"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+
+- name: Copy systemd fabio.service
+  template:
+    src: "fabio.service"
+    dest: "/usr/lib/systemd/system/fabio.service"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+  
+- name: Start {{ app }} agent
+  systemd:
+    name: "{{ app }}"
+    state: restarted
+    daemon_reload: yes
+    enabled: yes

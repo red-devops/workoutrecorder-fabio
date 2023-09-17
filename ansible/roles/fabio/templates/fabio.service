@@ -1,0 +1,16 @@
+[Unit]
+Description="Fabio proxy service"
+Requires=network-online.target
+After=network-online.target
+ 
+[Service]
+Restart=on-failure
+PermissionsStartOnly=true
+ExecStart=/bin/sh -c 'exec {{ app_bin_home }}/fabio -cfg {{ app_config_home }}/fabio.properties >> {{ app_log_home }}/fabio.log 2>&1'
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGTERM
+User={{ user }}
+Group={{ group }}
+ 
+[Install]
+WantedBy=multi-user.target
